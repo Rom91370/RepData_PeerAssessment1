@@ -7,19 +7,99 @@ output:
 
 
 ## Loading and preprocessing the data
+```{r}
+DT<-read.csv("C:/Users/Romain/Desktop/datasciencecoursera/Reproductible Research/activity.csv")
+head(DT)
+DT$date<-as.Date(DT$date,format = "%Y-%m-%d")
+class(DT$date)
 
-
+DT<-DT[complete.cases(DT),]
+```
 
 ## What is mean total number of steps taken per day?
+```{r}
+sumsteps<-tapply(DT$steps,DT$date,sum)
 
+sumsteps<-as.data.frame.table(sumsteps)
 
+hist(sumsteps$Freq,breaks = 10,col="red",
+     xlim = c(41,21194),
+     xlab = "Total Steps by day",
+     main = "Total number of steps taken per day")
+
+abline(v=median(sumsteps$Freq),col="blue")
+abline(v=mean(sumsteps$Freq),col="black")
+```
 
 ## What is the average daily activity pattern?
+```{r}
+stepbyinterval<-tapply(DT$steps,DT$interval,mean)
 
+stepbyinterval<-as.data.frame.table(stepbyinterval)
 
+plot(stepbyinterval$Var1,stepbyinterval$Freq, "l",
+     xlab="5-minute interval",
+     ylab="average number of steps",
+     main="The average daily activity pattern")
+
+lines(as.numeric(stepbyinterval$Var1),stepbyinterval$Freq, "l", col = "black")
+```
 
 ## Imputing missing values
+```{r}
+DT<-read.csv("C:/Users/Romain/Desktop/datasciencecoursera/Reproductible Research/activity.csv")
 
+DTna<-DT[is.na(DT$steps), ]
 
+newDT<-data.frame(steps=stepbyinterval
+                  [match(DTna$interval,stepbyinterval$Var1),2],
+                  date=DTna$date,
+                  interval=DTna$interval)
 
+DTcc<-DT[complete.cases(DT),]
+
+fDT<-rbind(newDT,DTcc)
+
+fDT$date<-as.Date(fDT$date,format = "%Y-%m-%d")
+
+sumsteps2<-tapply(fDT$steps,fDT$date,sum)
+sumsteps2<-as.data.frame.table(sumsteps2)
+
+hist(sumsteps2$Freq,breaks = 10,col="red",
+     xlim = c(41,21194),xlab = "Total Steps by day",
+     main = "Total number of steps taken per day")
+
+abline(v=median(sumsteps2$Freq),col="blue")
+abline(v=mean(sumsteps2$Freq),col="black")
+```
 ## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+library(dplyr)
+
+wkDT<-mutate(fDT,day=weekdays(fDT$date))
+
+NewVar <- factor(rep(NA, length(wkDT$day) ), 
+                 levels=c("weekday", "weekend") )   
+NewVar[ wkDT$day %in% c("lundi", "mardi", "mercredi","jeudi","vendredi")]<-"weekday"
+NewVar[ is.na(NewVar) ]<-"weekend"
+
+wkDT<-cbind(wkDT,NewVar)
+
+wkDT1<-subset(wkDT,wkDT$NewVar=="weekday")
+wkDT1interval<-tapply(wkDT1$steps,wkDT1$interval,mean)
+wkDT1interval<-as.data.frame.table(wkDT1interval)
+
+wkDT2<-subset(wkDT,wkDT$NewVar=="weekend")
+wkDT2interval<-tapply(wkDT2$steps,wkDT2$interval,mean)
+wkDT2interval<-as.data.frame.table(wkDT2interval)
+
+plot(wkDT2interval$Var1,wkDT2interval$Freq, "l",xlab="5-minute interval",
+     ylab="Number of steps",main="weekend")
+lines(as.numeric(wkDT2interval$Var1),wkDT2interval$Freq, "l", col = "black")
+
+plot(wkDT1interval$Var1,wkDT1interval$Freq, "l",xlab="5-minute interval",
+     ylab="Number of steps",main="weekday")
+lines(as.numeric(wkDT1interval$Var1),wkDT1interval$Freq, "l", col = "black")
+
+```
